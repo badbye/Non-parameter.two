@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>非参数统计</title>
+  <meta charset="utf-8">
+  <meta name="description" content="非参数统计">
+  <meta name="author" content="yaleidu">
+  <meta name="generator" content="slidify" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/default.css" media="all" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/phone.css" 
+    media="only screen and (max-device-width: 480px)" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/slidify.css" >
+  <link rel="stylesheet" href="libraries/highlighters/prettify/css/tomorrow.css" />
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->
+  <script data-main="libraries/frameworks/io2012/js/slides" 
+    src="libraries/frameworks/io2012/js/require-1.0.8.min.js">
+  </script>
+  
+    <link rel="stylesheet" href = "assets/css/ribbons.css">
+
+</head>
+<body style="opacity: 0">
+  <slides class="layout-widescreen">
+    
+    <!-- LOGO SLIDE -->
+    <!-- END LOGO SLIDE -->
+    
+
+    <!-- TITLE SLIDE -->
+    <!-- Should I move this to a Local Layout File? -->
+    <slide class="title-slide segue nobackground">
+      <hgroup class="auto-fadein">
+        <h1>非参数统计</h1>
+        <h2>双样本检验</h2>
+        <p>yaleidu<br/>为自己服务</p>
+      </hgroup>
+      <a href="https://github.com/badbye/Non-parameter.two/zipball/gh-pages" class="example">
+        Download
+      </a>
+          </slide>
+
+    <!-- SLIDES -->
+      <slide class="" id="slide-1" style="background:;">
+  <hgroup>
+    <h2>目录：</h2>
+  </hgroup>
+  <article>
+    <p>2.1 Brown-Mood中位数检验</p>
+
+<p>2.2 Wilcoxon(Mann-Whitney)秩和检验</p>
+
+<p>2.3 正态记分检验</p>
+
+<p>2.4 成对数据检验</p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+      <slide class="" id="slide-2" style="background:;">
+  <hgroup>
+    <h2>2.1 Brown-Mood中位数检验</h2>
+  </hgroup>
+  <article>
+    <p>双样本Brown-Mood中位数检验．</p>
+
+<pre><code class="r">brown = function(data, group) {
+    if (length(unique(group)) != 2) 
+        stop(&quot;group not valide&quot;)
+    data.median = median(data)
+    x = data[group == unique(group)[1]]
+    y = data[group == unique(group)[2]]
+    a = sum(x &gt; data.median)
+    b = sum(y &gt; data.median)
+    p = phyper(a, length(x), length(y), a + b)
+    p.one = min(p, 1 - p)
+    H1 = ifelse(median(x) &gt; median(y), &quot;Oneside test: M(1) &gt; M(2)&quot;, &quot;Oneside test: M(1) &lt; M(2)&quot;)
+    list(H1.one = H1, p.one = p.one, H1.two = &quot;Twoside test: M(1) != M(2)&quot;, 
+        p.two = 2 * p.one)
+}
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+      <slide class="" id="slide-3" style="background:;">
+  <hgroup>
+    <h2>2.2 Wilcoxon(Mann-Whitney)秩和检验</h2>
+  </hgroup>
+  <article>
+    <p>类似与单样本wilcoxon检验，利用样本的相对大小信息．</p>
+
+<p>适用范围：<strong>两总体分布形状类似，无需对称</strong></p>
+
+<pre><code class="r">wilcoxon.two = function(data, group) {
+    if (length(unique(group)) != 2) 
+        stop(&quot;group not valide&quot;)
+    cate = group == unique(group)[1]
+    Wxy = sum(outer(data[cate], data[!cate], &quot;-&quot;) &gt; 0)
+    Wyx = sum(outer(data[!cate], data[cate], &quot;-&quot;) &gt; 0)
+    H1 = ifelse(median(data[cate]) &gt; median(data[!cate]), &quot;Oneside test: M(1) &gt; M(2)&quot;, 
+        &quot;Oneside test: M(1) &lt; M(2)&quot;)
+    p.one = pwilcox(min(Wxy, Wyx), sum(cate), sum(1 - cate))
+    list(H1.one = H1, p.one = p.one, H1.two = &quot;Twoside test: M(1) != M(2)&quot;, 
+        p.two = 2 * p.one)
+}
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+      <slide class="" id="slide-4" style="background:;">
+  <hgroup>
+    <h2>2.3 正态记分检验</h2>
+  </hgroup>
+  <article>
+    <p>类似于单样本的正态记分检验．</p>
+
+<pre><code class="r">norm.two = function(data, group) {
+    w = cbind(data, group)
+    w = w[order(data), ]
+    n = length(data)
+    norm.score = qnorm((1:n)/(n + 1))
+    w = cbind(w, 1:n, norm.score)
+    cate = w[, 2] == unique(group)[1]
+    T = sum(norm.score[cate])
+    S = sqrt(sum(norm.score^2) * sum(cate) * sum(!cate)/n/(n - 1))
+    p.one = min(pnorm(T/S), 1 - pnorm(T/S))
+    H1 = ifelse(T &gt; 0, &quot;Oneside test: M(1) &gt; M(2)&quot;, &quot;Oneside test: M(1) &lt; M(2)&quot;)
+    list(H1.one = H1, p.one = p.one, H1.two = &quot;Twoside test: M(1) != M(2)&quot;, 
+        p.two = 2 * p.one)
+}
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+      <slide class="" id="slide-5" style="background:;">
+  <hgroup>
+    <h2>2.4 成对数据检验</h2>
+  </hgroup>
+  <article>
+    <p>假定：　　　　</p>
+
+<ul>
+<li>每对数据来自同一对象或比较类似的对象；</li>
+<li>对和对之间独立；</li>
+<li>都是连续变量；</li>
+</ul>
+
+<pre><code class="r">pair.test = function(x, y) {
+    d = x - y
+    r = rank(abs(d))
+    w1 = sum(r[sign(d) == 1])
+    w2 = sum(r[sign(d) == -1])
+    p.one = psignrank(min(w1, w2), length(x))
+    H1 = ifelse(w1 &gt; w2, &quot;Oneside test: M(x) &gt; M(y)&quot;, &quot;Oneside test: M(x) &lt; M(y)&quot;)
+    list(H1.one = H1, p.one = p.one, H1.two = &quot;Twoside test: M(x) != M(y)&quot;, 
+        p.two = 2 * p.one)
+}
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+    <slide class="backdrop"></slide>
+  </slides>
+
+  <!--[if IE]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">  
+    </script>
+    <script>CFInstall.check({mode: 'overlay'});</script>
+  <![endif]-->
+</body>
+<!-- Grab CDN jQuery, fall back to local if offline -->
+<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.min.js"></script>
+<script>window.jQuery || document.write('<script src="libraries/widgets/quiz/js/jquery-1.7.min.js"><\/script>')</script>
+<!-- Load Javascripts for Widgets -->
+<!-- Google Prettify -->
+<script src="http://cdnjs.cloudflare.com/ajax/libs/prettify/188.0.0/prettify.js"></script>
+<script src='libraries/highlighters/prettify/js/lang-r.js'></script>
+<script>
+  var pres = document.getElementsByTagName("pre");
+  for (var i=0; i < pres.length; ++i) {
+    pres[i].className = "prettyprint ";
+  }
+  prettyPrint();
+</script>
+<!-- End Google Prettify --></html>
