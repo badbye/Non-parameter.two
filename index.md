@@ -115,4 +115,4 @@ pair.test = function(x, y) {
 }
 ```
 
-
+注: wilcox.test(x, y, paired=T)同样可以进行成对数据检验.

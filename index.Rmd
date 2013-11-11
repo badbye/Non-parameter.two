@@ -107,4 +107,4 @@ pair.test = function(x, y){
   list(H1.one=H1, p.one=p.one, 
        H1.two='Twoside test: M(x) != M(y)', p.two=2*p.one)}
 ```
-
+注: wilcox.test(x, y, paired=T)同样可以进行成对数据检验.
